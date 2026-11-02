@@ -1,4 +1,4 @@
-// All people, figures and systems are fictitious. Demonstration only.
+﻿// All people, figures and systems are fictitious. Demonstration only.
 const TODAY = "2026-11-09";
 const EXTRACT = "2026-11-06";
 
@@ -156,7 +156,7 @@ const DDFORMS = [
     signed: "Harold Vine", date: "2026-11-05", capacity: "" },
   { id: "DD-2611-05", received: "2026-11-06", ccKey: "pemberton", accName: "Mr Colin Pemberton", bank: "Harbour Building Society", branch: "Eastbourne", sort: "30-96-14", acct: "28840753", ref: "CC-70211",
     signed: "Colin Pemberton", date: "2026-11-05", capacity: "" },
-  { id: "DD-2611-06", received: "2026-11-06", ccKey: "prior", accName: "Mr Neville Prior", bank: "Weald Bank", branch: "Polegate", sort: "40-51-93", acct: "19273640", ref: "CC-70524",
+  { id: "DD-2611-06", received: "2026-11-09", ccKey: "prior", accName: "Mr Neville Prior", bank: "Weald Bank", branch: "Polegate", sort: "40-51-93", acct: "19273640", ref: "CC-70524",
     signed: "", date: "", capacity: "" },
 ];
 
@@ -181,3 +181,4 @@ const CALLS = [
 ];
 
 module.exports = { TODAY, EXTRACT, ACCOUNTS, LAS, CC_NOTES, DDFORMS, CALLS };
+
