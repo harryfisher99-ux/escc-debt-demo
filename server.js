@@ -46,7 +46,7 @@ function audit(sys, text) { S.audit.unshift({ t: nowStamp(), sys, text }); save(
 const receiptsFor = a => {
   const r = [];
   if (a.lastPay) r.push({ date: a.lastPay.date, amt: a.lastPay.amt, how: a.plan ? "Bank transfer (plan)" : "Card / BACS" });
-  if (a.key === "brightwell") r.unshift({ date: "2026-11-07", amt: 600, how: "BACS (posted to Oracle after the 6 Nov arrears extract)" });
+  if (a.paidSince) r.unshift({ date: "2026-11-07", amt: a.out, how: "BACS (posted to Oracle after the 6 Nov arrears extract)" });
   if (a.plan && a.plan.status === "Active") { r.push({ date: "2026-10-01", amt: 50, how: "Bank transfer (plan)" }); r.push({ date: "2026-09-01", amt: 50, how: "Bank transfer (plan)" }); }
   return r.sort((x, y) => y.date.localeCompare(x.date));
 };
@@ -68,6 +68,9 @@ const daysOverdue = a => dayDiff(a.oldest, TODAY);
 const note = (k, t, b) => CUR.notes ? `<div class="dn ${k}"><b class="t">${{ wait: "&#9203; Waiting for", limit: "&#9888; Limitation", fast: "&#9889; Faster with Cowork" }[k]} ${esc(t)}</b><span>${b}</span></div>` : "";
 const T = (h, rows, cls) => `<table class="${cls || ""}"><thead><tr>${h.map(x => `<th>${x}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
 const KV = rows => `<table class="kv"><tbody>${rows.map(r => `<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join("")}</tbody></table>`;
+const PAGE = 50;
+const pager = (base, page, total) => { const n = Math.max(1, Math.ceil(total / PAGE)); let s = `<p class="small">Page ${page} of ${n}. `; if (page > 1) s += `<a href="${base}?page=${page - 1}">Previous</a> `; if (page < n) s += `<a href="${base}?page=${page + 1}">Next page</a>`; return s + "</p>"; };
+const pageOf = req => Math.max(1, parseInt(new URL(req.url, "http://x").searchParams.get("page") || "1", 10) || 1);
 const pill = (t, c) => `<span class="pill ${c || ""}">${esc(t)}</span>`;
 
 const CSS = `*{box-sizing:border-box}body{margin:0;font-family:"Segoe UI",Arial,sans-serif;font-size:14px;color:#222;background:#f3f4f6}
@@ -130,10 +133,11 @@ R("POST", "/reset-local", async (req, res) => { S = seedState(); audit("Demo", "
 R("GET", "/notes/toggle", (req, res) => { CUR.notes = !CUR.notes; return go(res, req.headers.referer ? new URL(req.headers.referer).pathname : "/"); });
 
 // ----- LAS -----
-R("GET", "/las", () => {
+R("GET", "/las", (req) => {
+  const pg = pageOf(req);
   const ids = [...new Set(ACCOUNTS.filter(a => a.lasId).map(a => a.lasId))].sort();
-  const rows = ids.map(id => { const a = ACCOUNTS.find(x => x.lasId === id); const l = LAS[id]; return [`<a href="/las/person/${id}">${id}</a>`, esc(a.name), fmtD(a.dob), esc(l.team), esc(l.worker), l.status === "Deceased" ? pill("Deceased", "red") : pill("Active", "green")]; });
-  return ["las", "People", `<h1>People</h1>${note("limit", "a System C connector", "No published API or connector for LAS is available to Copilot. Cowork reads the screens exactly as an officer would, using the signed-in browser.")}${T(["Person ID", "Name", "Date of birth", "Team", "Allocated worker", "Status"], rows)}`];
+  const rows = ids.slice((pg - 1) * PAGE, pg * PAGE).map(id => { const a = ACCOUNTS.find(x => x.lasId === id); const l = LAS[id]; return [`<a href="/las/person/${id}">${id}</a>`, esc(a.name), fmtD(a.dob), esc(l.team), esc(l.worker), l.status === "Deceased" ? pill("Deceased", "red") : pill("Active", "green")]; });
+  return ["las", "People", `<h1>People</h1><p class="small">${ids.length} people with a charged care package. Search by name is not available in this demo: open a person from the finance system, or use the pages below.</p>${note("limit", "a System C connector", "No published API or connector for LAS is available to Copilot. Cowork reads the screens exactly as an officer would, using the signed-in browser.")}${pager("/las", pg, ids.length)}${T(["Person ID", "Name", "Date of birth", "Team", "Allocated worker", "Status"], rows)}`];
 });
 R("GET", "/las/person/:id", (req, res, p) => {
   const l = LAS[p.id]; const a = ACCOUNTS.find(x => x.lasId === p.id); if (!l) return ["las", "Not found", "<h1>Person not found</h1>"];
@@ -154,15 +158,17 @@ ${note("wait", "someone to open this screen", "Today an officer opens LAS separa
 const stageOf = a => a.last.type;
 R("GET", "/controcc", () => ["cc", "Home", `<h1>Liquidlogic Social Care Finance</h1><div class="card"><p>Arrears extract run: <b>${fmtD(EXTRACT)}</b>. Today: <b>${fmtD(TODAY)}</b>.</p>
 <p><a class="btn" href="/controcc/overdue">Open the recovery work queue</a></p></div>${note("limit", "a System C connector", "ContrOCC has no published API for Copilot. Cowork reads the same screens an officer sees.")}`]);
-R("GET", "/controcc/overdue", () => {
-  const rows = ACCOUNTS.map(a => [`<a href="/controcc/client/${a.cc}">${a.cc}</a>`, esc(a.name), esc(a.debtType), gbp(a.out), fmtD(a.oldest), a.last.type === "None" ? "-" : esc(a.last.type), fmtD(a.last.date), a.plan ? pill("Plan: " + a.plan.status, a.plan.status === "Broken" ? "red" : "green") : "-", a.block ? pill("Block: " + a.block.type, "amber") : "-", esc(a.payMethod)]);
+R("GET", "/controcc/overdue", (req) => {
+  const pg = pageOf(req);
+  const sorted = [...ACCOUNTS].sort((x, y) => y.out - x.out);
+  const rows = sorted.slice((pg - 1) * PAGE, pg * PAGE).map((a, i) => [(pg - 1) * PAGE + i + 1, `<a href="/controcc/client/${a.cc}">${a.cc}</a>`, esc(a.name), esc(a.debtType), gbp(a.out), fmtD(a.oldest), a.last.type === "None" ? "-" : esc(a.last.type), fmtD(a.last.date), a.plan ? pill("Plan: " + a.plan.status, a.plan.status === "Broken" ? "red" : "green") : "-", a.block ? pill("Block: " + a.block.type, "amber") : "-", esc(a.payMethod)]);
   const tot = ACCOUNTS.reduce((s, a) => s + a.out, 0);
-  return ["cc", "Recovery work queue", `<h1>Recovery work queue</h1><p class="small">Arrears extract of ${fmtD(EXTRACT)}. ${ACCOUNTS.length} accounts. Total ${gbp(tot)}.</p>
+  return ["cc", "Recovery work queue", `<h1>Recovery work queue</h1><p class="small">Arrears extract of ${fmtD(EXTRACT)}. <b>${ACCOUNTS.length} accounts</b> with arrears, total ${gbp(tot)}. Sorted by largest arrears first, 50 to a page. The team's daily batch is the top 50 (page 1).</p>
 ${note("wait", "three systems per case", "ContrOCC shows the debt, the last letter and any invoice block. It does not show capacity, safeguarding, a death or hospital notes. Those are in LAS, and receipts since the extract are in Oracle.")}
-${note("fast", "one pass across the lot", "Cowork reads this queue, then LAS and Oracle for each case, and joins the three views.")}
-${T(["Client ID", "Name", "Debt type", "Outstanding", "Oldest unpaid due", "Last notice", "Notice date", "Repayment plan", "Invoice block", "Payment method"], rows)}`];
-});
-R("GET", "/controcc/client/:id", (req, res, p) => {
+${note("limit", "reading screen by screen", "Working an account means opening three screens. That suits a daily batch of the top 50. For thousands, the bulk sort would come from a data feed (for example Fabric) and Cowork would take only the accounts that need judgement.")}
+${note("fast", "one pass across the batch", "Cowork reads the top 50, then LAS and Oracle for each, and joins the three views. It could be scheduled to keep going while the team is away.")}
+${pager("/controcc/overdue", pg, ACCOUNTS.length)}${T(["#", "Client ID", "Name", "Debt type", "Outstanding", "Oldest unpaid due", "Last notice", "Notice date", "Repayment plan", "Invoice block", "Payment method"], rows)}${pager("/controcc/overdue", pg, ACCOUNTS.length)}`];
+});R("GET", "/controcc/client/:id", (req, res, p) => {
   const a = accByCC(p.id); if (!a) return ["cc", "Not found", "<h1>Client not found</h1>"];
   const inv = invoicesFor(a); const notes = S.notes[a.cc] || [];
   const dup = ACCOUNTS.filter(x => x.lasId && x.lasId === a.lasId && x.cc !== a.cc);
@@ -201,10 +207,13 @@ R("GET", "/controcc/panels", () => ["cc", "Debt Panel papers", `<h1>Debt Panel p
 // ----- Oracle -----
 R("GET", "/oracle", () => ["ora", "Home", `<h1>Receivables</h1><div class="card"><p>Customer balances, receipts and Direct Debit mandates.</p><p><a class="btn" href="/oracle/customers">Customer balances</a> <a class="btn grey" href="/oracle/mandates">Direct Debit mandates</a></p></div>
 ${note("limit", "a direct feed", "Oracle receipts can post a day or more after ContrOCC's extract, so a payment can already be in Oracle when ContrOCC still shows the debt.")}`]);
-R("GET", "/oracle/customers", () => ["ora", "Customer balances", `<h1>Customer balances</h1>${T(["Customer", "Name", "Balance per ledger", "Last receipt"], ACCOUNTS.map(a => { const r = receiptsFor(a)[0]; const bal = (a.key === "brightwell") ? 0 : a.out; return [`<a href="/oracle/customer/${a.ar}">${a.ar}</a>`, esc(a.name), gbp(bal), r ? gbp(r.amt) + " on " + fmtD(r.date) : "-"]; }))}`]);
-R("GET", "/oracle/customer/:id", (req, res, p) => {
+R("GET", "/oracle/customers", (req) => {
+  const pg = pageOf(req); const sorted = [...ACCOUNTS].sort((x, y) => y.out - x.out);
+  const rows = sorted.slice((pg - 1) * PAGE, pg * PAGE).map(a => { const r = receiptsFor(a)[0]; const bal = a.paidSince ? 0 : a.out; return [`<a href="/oracle/customer/${a.ar}">${a.ar}</a>`, esc(a.name), gbp(bal), r ? gbp(r.amt) + " on " + fmtD(r.date) : "-"]; });
+  return ["ora", "Customer balances", `<h1>Customer balances</h1>${pager("/oracle/customers", pg, ACCOUNTS.length)}${T(["Customer", "Name", "Balance per ledger", "Last receipt"], rows)}`];
+});R("GET", "/oracle/customer/:id", (req, res, p) => {
   const a = ACCOUNTS.find(x => x.ar === p.id); if (!a) return ["ora", "Not found", "<h1>Customer not found</h1>"];
-  const rec = receiptsFor(a); const bal = a.key === "brightwell" ? 0 : a.out;
+  const rec = receiptsFor(a); const bal = a.paidSince ? 0 : a.out;
   const m = S.mandates.filter(x => x.ar === a.ar);
   return ["ora", a.name, `<h1>${esc(a.name)} <span class="small">${a.ar}</span></h1><div class="grid2"><div class="card"><h2>Account</h2>${KV([["Customer", a.ar], ["ContrOCC client", `<a href="${L("cc","/controcc/client/"+a.cc)}">${a.cc}</a>`], ["Balance per ledger", "<b>" + gbp(bal) + "</b>"], ["Dunning (last letter)", a.last.type === "None" ? "None" : esc(a.last.type) + " " + fmtD(a.last.date)], ["Payment method", esc(a.payMethod)]])}</div>
 <div class="card"><h2>Receipts</h2>${rec.length ? T(["Date", "Amount", "Method"], rec.map(r => [fmtD(r.date), gbp(r.amt), esc(r.how)])) : "<p>No receipts.</p>"}</div></div>
@@ -286,4 +295,5 @@ http.createServer(async (req, res) => {
     html(res, shell("home", "Not found", "<h1>Page not found</h1>"), 404);
   } catch (e) { console.error(e); res.writeHead(500); res.end("Server error"); }
 }).listen(PORT, () => console.log("ESCC demo on " + PORT));
+
 

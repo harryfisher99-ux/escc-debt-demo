@@ -30,7 +30,7 @@ const ACCOUNTS = [
       block: { type: "Dispute", date: "2026-10-02", by: "ASC Finance", text: "Sister (informal advocate) disputes the charge assessment. Welfare Rights review requested. Hold recovery until outcome." } }),
   A({ key: "brightwell", cc: "CC-70433", ar: "AR-31350", lasId: "P-20790", name: "Mr Stanley Brightwell", salutation: "Mr Brightwell", dob: "1945-06-14",
       addr: "17 Hampden Park Drive, Eastbourne, BN22 9NT", service: "Home care (2 calls a day)", weekly: 100.0, debtType: "Unsecured", out: 600.0, oldest: "2026-09-04",
-      last: { type: "Reminder 2", date: "2026-10-08" }, lastPay: { date: "2026-08-03", amt: 100 }, plan: null, block: null, payMethod: "Invoice" }),
+      last: { type: "Reminder 2", date: "2026-10-08" }, lastPay: { date: "2026-08-03", amt: 100 }, plan: null, block: null, payMethod: "Invoice", paidSince: true }),
   A({ key: "fenwick", cc: "CC-70466", ar: "AR-31372", lasId: "P-20833", name: "Mrs Hilary Fenwick", salutation: "Mrs Fenwick", dob: "1949-02-08",
       addr: "8 Mermaid Street, Rye, TN31 7ET", service: "Home care (2 calls a day)", weekly: 88.4, debtType: "Unsecured", out: 760.2, oldest: "2026-09-25",
       last: { type: "Reminder 2", date: "2026-10-02" }, lastPay: { date: "2026-09-10", amt: 88.4 }, plan: null, block: null, payMethod: "Invoice" }),
@@ -180,5 +180,8 @@ const CALLS = [
     ] },
 ];
 
+require("./fillers").addFillers(TODAY, ACCOUNTS, LAS, CC_NOTES);
 module.exports = { TODAY, EXTRACT, ACCOUNTS, LAS, CC_NOTES, DDFORMS, CALLS };
+
+
 
