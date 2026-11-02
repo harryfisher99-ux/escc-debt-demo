@@ -1,4 +1,4 @@
-// ESCC Adult Social Care debt recovery demo. All people, figures and systems are fictitious.
+﻿// ESCC Adult Social Care debt recovery demo. All people, figures and systems are fictitious.
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -7,6 +7,12 @@ const PORT = process.env.PORT || 3000;
 const STATE_FILE = path.join(__dirname, "state.json");
 const VERSION = 1;
 const CUR = { notes: true };
+const SYSTEM = process.env.SYSTEM || "all";
+const DEF = { las: "https://escc-las.onrender.com", cc: "https://escc-controcc.onrender.com", ora: "https://escc-oracle.onrender.com", docs: "https://escc-sharepoint.onrender.com" };
+const BASE = {};
+["las", "cc", "ora", "docs"].forEach(k => { BASE[k] = SYSTEM === "all" ? "" : (process.env[k.toUpperCase() + "_URL"] || DEF[k]); });
+const L = (sys, p) => BASE[sys] + p;
+const PREFIX = { las: "/las", cc: "/controcc", ora: "/oracle", docs: "/docs" };
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const gbp = n => "£" + Number(n || 0).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -82,8 +88,8 @@ button,.btn{background:#0b5cad;color:#fff;border:0;border-radius:3px;padding:8px
 const SYS = {
   home: { name: "ESCC ASC debt recovery demo", css: "", nav: [] },
   las: { name: "Liquidlogic Adults (LAS)", css: ".top{background:#0a5c7a}.top .lg{color:#fff}.sub{background:#e6f1f5}", nav: [["/las", "People"]] },
-  cc: { name: "Liquidlogic Social Care Finance (ContrOCC)", css: ".top{background:#1b2f55}.top .lg{color:#fff}.sub{background:#e4e9f2}", nav: [["/controcc", "Home"], ["/controcc/overdue", "Recovery work queue"], ["/controcc/panels", "Debt Panel papers"]] },
-  ora: { name: "Oracle Fusion Cloud Receivables", css: ".top{background:#312d2a;border-bottom:4px solid #c74634}.top .lg{color:#fff}.sub{background:#ece8e4}", nav: [["/oracle", "Home"], ["/oracle/customers", "Customer balances"], ["/oracle/mandates", "Direct Debit mandates"], ["/oracle/approvals", "Approvals"]] },
+  cc: { name: "Liquidlogic Social Care Finance (ContrOCC)", css: ".top{background:#1b2f55}.top .lg{color:#fff}.sub{background:#e4e9f2}", nav: [["/controcc", "Home"], ["/controcc/overdue", "Recovery work queue"], ["/controcc/panels", "Debt Panel papers"], ["/audit", "Audit log"]] },
+  ora: { name: "Oracle Fusion Cloud Receivables", css: ".top{background:#312d2a;border-bottom:4px solid #c74634}.top .lg{color:#fff}.sub{background:#ece8e4}", nav: [["/oracle", "Home"], ["/oracle/customers", "Customer balances"], ["/oracle/mandates", "Direct Debit mandates"], ["/oracle/approvals", "Approvals"], ["/audit", "Audit log"]] },
   docs: { name: "SharePoint - ASC Debt Recovery", css: ".top{background:#036c70}.top .lg{color:#fff}.sub{background:#e3f1f1}", nav: [["/docs", "Documents"]] },
   audit: { name: "Demo audit log", css: ".top{background:#444}.top .lg{color:#fff}.sub{background:#eee}", nav: [] },
 };
@@ -92,7 +98,7 @@ function shell(sys, title, body) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)} - ${esc(s.name)}</title><style>${CSS}${s.css}
 .top{padding:10px 20px;display:flex;align-items:center;gap:22px}.top .lg{font-weight:700;font-size:16px}.sub{padding:7px 20px;display:flex;gap:18px;font-size:13px}.sub a{text-decoration:none;font-weight:600}</style></head><body>
 <div class="demo"><b>DEMONSTRATION. Fictitious people and data. Not connected to East Sussex County Council systems.</b><span>Demo date: ${fmtD(TODAY)}</span>
-<a href="/">Home</a><a href="/las">LAS</a><a href="/controcc">ContrOCC</a><a href="/oracle">Oracle</a><a href="/docs">Documents</a><a href="/audit">Audit log</a>
+<a href="${L("las","/")}">Demo home</a><a href="${L("las","/las")}">LAS</a><a href="${L("cc","/controcc")}">ContrOCC</a><a href="${L("ora","/oracle")}">Oracle</a><a href="${L("docs","/docs")}">Documents</a>
 <a href="/notes/toggle">${CUR.notes ? "Hide" : "Show"} demo notes</a></div>
 <div class="top"><span class="lg">${esc(s.name)}</span></div>${s.nav.length ? `<div class="sub">${s.nav.map(n => `<a href="${n[0]}">${n[1]}</a>`).join("")}</div>` : ""}
 <div class="wrap">${body}</div></body></html>`;
@@ -108,14 +114,19 @@ const go = (res, to) => { res.writeHead(303, { Location: to }); res.end(); retur
 R("GET", "/", () => ["home", "Home", `<h1>East Sussex County Council: Adult Social Care debt recovery (demo)</h1>
 <p>A practice environment for showing Copilot Cowork working across the systems used in ASC debt recovery. Everything here is invented.</p>
 <div class="grid2"><div class="card"><h2>Systems</h2><ul>
-<li><a href="/las">Liquidlogic Adults (LAS)</a>: case record, capacity, alerts, representatives, funding, notes (read only)</li>
-<li><a href="/controcc">Liquidlogic Social Care Finance (ContrOCC)</a>: charges, invoices, recovery queue, activity log</li>
-<li><a href="/oracle">Oracle Receivables</a>: customer ledger, receipts, Direct Debit mandates and approvals</li>
-<li><a href="/docs">SharePoint documents</a>: Direct Debit forms received, call transcripts</li>
-<li><a href="/audit">Audit log</a>: every write made during the demo</li></ul></div>
+<li><a href="${L("las","/las")}">Liquidlogic Adults (LAS)</a>: case record, capacity, alerts, representatives, funding, notes (read only)</li>
+<li><a href="${L("cc","/controcc")}">Liquidlogic Social Care Finance (ContrOCC)</a>: charges, invoices, recovery queue, activity log</li>
+<li><a href="${L("ora","/oracle")}">Oracle Receivables</a>: customer ledger, receipts, Direct Debit mandates and approvals</li>
+<li><a href="${L("docs","/docs")}">SharePoint documents</a>: Direct Debit forms received, call transcripts</li>
+<li>Audit log: on the ContrOCC and Oracle sites (every write made during the demo)</li></ul></div>
 <div class="card"><h2>Reset</h2><p>Puts the demo back to the start (clears notes, Debt Panel papers and Direct Debit mandates).</p><form method="post" action="/reset"><button class="btn red">Reset demo data</button></form>
 <p class="small">Free hosting can sleep. If the first load is slow, wait a minute and refresh.</p></div></div>`]);
-R("POST", "/reset", async (req, res) => { S = seedState(); audit("Demo", "Demo data reset."); return go(res, "/"); });
+R("POST", "/reset", async (req, res) => {
+  S = seedState(); audit("Demo", "Demo data reset.");
+  if (SYSTEM !== "all") await Promise.all(["las", "cc", "ora", "docs"].filter(k => k !== SYSTEM).map(k => fetch(BASE[k] + "/reset-local", { method: "POST" }).catch(() => { })));
+  return go(res, "/");
+});
+R("POST", "/reset-local", async (req, res) => { S = seedState(); audit("Demo", "Demo data reset."); res.writeHead(200); res.end("ok"); return null; });
 R("GET", "/notes/toggle", (req, res) => { CUR.notes = !CUR.notes; return go(res, req.headers.referer ? new URL(req.headers.referer).pathname : "/"); });
 
 // ----- LAS -----
@@ -156,7 +167,7 @@ R("GET", "/controcc/client/:id", (req, res, p) => {
   const inv = invoicesFor(a); const notes = S.notes[a.cc] || [];
   const dup = ACCOUNTS.filter(x => x.lasId && x.lasId === a.lasId && x.cc !== a.cc);
   return ["cc", a.name, `<h1>${esc(a.name)} <span class="small">${a.cc}</span></h1>
-<div class="grid2"><div class="card"><h2>Client</h2>${KV([["Name", esc(a.name)], ["Date of birth", a.dob ? fmtD(a.dob) : "-"], ["Address", esc(a.addr)], ["LAS person ID", a.lasId ? `<a href="/las/person/${a.lasId}">${a.lasId}</a>` : "-"], ["Oracle customer", `<a href="/oracle/customer/${a.ar}">${a.ar}</a>`], ["Service", esc(a.service)], ["Weekly charge", a.weekly ? gbp(a.weekly) : "-"], ["Payment method", esc(a.payMethod)]])}</div>
+<div class="grid2"><div class="card"><h2>Client</h2>${KV([["Name", esc(a.name)], ["Date of birth", a.dob ? fmtD(a.dob) : "-"], ["Address", esc(a.addr)], ["LAS person ID", a.lasId ? `<a href="${L("las","/las/person/"+a.lasId)}">${a.lasId}</a>` : "-"], ["Oracle customer", `<a href="${L("ora","/oracle/customer/"+a.ar)}">${a.ar}</a>`], ["Service", esc(a.service)], ["Weekly charge", a.weekly ? gbp(a.weekly) : "-"], ["Payment method", esc(a.payMethod)]])}</div>
 <div class="card"><h2>Recovery position</h2>${KV([["Debt type", esc(a.debtType)], ["Outstanding (extract " + fmtD(EXTRACT) + ")", "<b>" + gbp(a.out) + "</b>"], ["Oldest unpaid invoice due", fmtD(a.oldest) + " (" + daysOverdue(a) + " days)"], ["Last notice", a.last.type === "None" ? "None issued" : esc(a.last.type) + " on " + fmtD(a.last.date)], ["Last payment", a.lastPay ? gbp(a.lastPay.amt) + " on " + fmtD(a.lastPay.date) : "None recorded"],
   ["Repayment plan", a.plan ? `${gbp(a.plan.amt)} a month from ${fmtD(a.plan.start)}. <b>${a.plan.status}</b>. Last instalment ${fmtD(a.plan.lastInst)}. ${esc(a.plan.note)}` : "None"], ["Invoice block", a.block ? `<b>${esc(a.block.type)}</b> since ${fmtD(a.block.date)} (${esc(a.block.by)}): ${esc(a.block.text)}` : "None"]])}</div></div>
 ${dup.length ? `<div class="alert"><b>Possible duplicate:</b> another ContrOCC account (${dup.map(d => `<a href="/controcc/client/${d.cc}">${d.cc}</a>`).join(", ")}) has the same name, date of birth and address.</div>` : ""}
@@ -195,7 +206,7 @@ R("GET", "/oracle/customer/:id", (req, res, p) => {
   const a = ACCOUNTS.find(x => x.ar === p.id); if (!a) return ["ora", "Not found", "<h1>Customer not found</h1>"];
   const rec = receiptsFor(a); const bal = a.key === "brightwell" ? 0 : a.out;
   const m = S.mandates.filter(x => x.ar === a.ar);
-  return ["ora", a.name, `<h1>${esc(a.name)} <span class="small">${a.ar}</span></h1><div class="grid2"><div class="card"><h2>Account</h2>${KV([["Customer", a.ar], ["ContrOCC client", `<a href="/controcc/client/${a.cc}">${a.cc}</a>`], ["Balance per ledger", "<b>" + gbp(bal) + "</b>"], ["Dunning (last letter)", a.last.type === "None" ? "None" : esc(a.last.type) + " " + fmtD(a.last.date)], ["Payment method", esc(a.payMethod)]])}</div>
+  return ["ora", a.name, `<h1>${esc(a.name)} <span class="small">${a.ar}</span></h1><div class="grid2"><div class="card"><h2>Account</h2>${KV([["Customer", a.ar], ["ContrOCC client", `<a href="${L("cc","/controcc/client/"+a.cc)}">${a.cc}</a>`], ["Balance per ledger", "<b>" + gbp(bal) + "</b>"], ["Dunning (last letter)", a.last.type === "None" ? "None" : esc(a.last.type) + " " + fmtD(a.last.date)], ["Payment method", esc(a.payMethod)]])}</div>
 <div class="card"><h2>Receipts</h2>${rec.length ? T(["Date", "Amount", "Method"], rec.map(r => [fmtD(r.date), gbp(r.amt), esc(r.how)])) : "<p>No receipts.</p>"}</div></div>
 <div class="card"><h2>Open invoices</h2>${bal === 0 ? "<p>No open invoices. Fully paid.</p>" : T(["Invoice", "Due", "Amount"], invoicesFor(a).map(i => [i.no, fmtD(i.due), gbp(i.amt)]))}</div>
 <div class="card"><h2>Direct Debit mandates</h2>${m.length ? T(["Mandate", "Status", "Account name", "Sort code", "Account", "Form"], m.map(x => [x.id, pill(x.status, x.status === "Active" ? "green" : "amber"), esc(x.accName), esc(x.sort), "****" + esc(x.acct.slice(-4)), esc(x.formRef)])) : "<p>None.</p>"}</div>`];
@@ -260,7 +271,9 @@ R("GET", "/api/audit.json", (req, res) => { res.writeHead(200, { "Content-Type":
 R("GET", "/api/mandates.json", (req, res) => { res.writeHead(200, { "Content-Type": "application/json" }); res.end(JSON.stringify(S.mandates)); return null; });
 R("GET", "/health", (req, res) => { res.writeHead(200); res.end("ok"); return null; });
 
-const compiled = Object.keys(routes).map(k => { const [method, p] = k.split(" "); return { method, re: new RegExp("^" + p.replace(/:(\w+)/g, "(?<$1>[^/]+)") + "$"), fn: routes[k] }; });
+const GENERIC = ["/", "/audit", "/reset", "/reset-local", "/notes/toggle", "/health", "/api/audit.json", "/api/mandates.json"];
+const allowed = p => SYSTEM === "all" || GENERIC.includes(p) || p.startsWith(PREFIX[SYSTEM]);
+const compiled = Object.keys(routes).filter(k => allowed(k.split(" ")[1])).map(k => { const [method, p] = k.split(" "); return { method, re: new RegExp("^" + p.replace(/:(\w+)/g, "(?<$1>[^/]+)") + "$"), fn: routes[k] }; });
 load();
 http.createServer(async (req, res) => {
   try {
@@ -273,3 +286,4 @@ http.createServer(async (req, res) => {
     html(res, shell("home", "Not found", "<h1>Page not found</h1>"), 404);
   } catch (e) { console.error(e); res.writeHead(500); res.end("Server error"); }
 }).listen(PORT, () => console.log("ESCC demo on " + PORT));
+
