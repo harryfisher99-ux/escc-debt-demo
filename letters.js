@@ -13,8 +13,8 @@ const LINKS = {
   site: "https://www.eastsussex.gov.uk/social-care/paying-for-care",
 };
 const LOGO = "https://www.eastsussex.gov.uk/media/mepbxm1y/decoupled-escc-logo-for-website-test-version-large.png?width=600&format=png";
-const HEADER = "https://raw.githubusercontent.com/harryfisher99-ux/escc-debt-demo/main/assets/escc-email-header.png";
-const SIGLOGO = "https://raw.githubusercontent.com/harryfisher99-ux/escc-debt-demo/main/assets/escc-signature-logo.png";
+const HEADER = "https://escc-sharepoint.onrender.com/assets/escc-email-header.png";
+const SIGLOGO = "https://escc-sharepoint.onrender.com/assets/escc-signature-logo.png";
 const A = (u, t, extra = "") => `<a href="${u}" style="color:${BLUE};text-decoration:underline;${extra}">${t}</a>`;
 
 const STAGES = {
