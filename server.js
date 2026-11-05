@@ -92,7 +92,7 @@ button,.btn{background:#0b5cad;color:#fff;border:0;border-radius:3px;padding:8px
 const SYS = {
   home: { name: "ESCC ASC debt recovery demo", css: "", nav: [] },
   las: { name: "Liquidlogic Adults (LAS)", css: ".top{background:#0a5c7a}.top .lg{color:#fff}.sub{background:#e6f1f5}", nav: [["/las", "People"], ["/las/reports/financial-risk", "Reports"]] },
-  cc: { name: "Liquidlogic Social Care Finance (ContrOCC)", css: ".top{background:#1b2f55}.top .lg{color:#fff}.sub{background:#e4e9f2}", nav: [["/controcc", "Home"], ["/controcc/overdue", "Recovery work queue"], ["/controcc/reports/recovery", "Reports"], ["/controcc/import", "Batch import"], ["/controcc/panels", "Debt Panel papers"], ["/audit", "Audit log"]] },
+  cc: { name: "Liquidlogic Social Care Finance (ContrOCC)", css: ".top{background:#1b2f55}.top .lg{color:#fff}.sub{background:#e4e9f2}", nav: [["/controcc", "Home"], ["/controcc/overdue", "Recovery work queue"], ["/controcc/reports/recovery", "Reports"], ["/controcc/panels", "Debt Panel papers"], ["/audit", "Audit log"]] },
   ora: { name: "Oracle Fusion Cloud Receivables", css: ".top{background:#312d2a;border-bottom:4px solid #c74634}.top .lg{color:#fff}.sub{background:#ece8e4}", nav: [["/oracle", "Home"], ["/oracle/customers", "Customer balances"], ["/oracle/reports/ledger", "Reports"], ["/oracle/mandates", "Direct Debit mandates"], ["/oracle/approvals", "Approvals"], ["/audit", "Audit log"]] },
   docs: { name: "SharePoint - ASC Debt Recovery", css: ".top{background:#036c70}.top .lg{color:#fff}.sub{background:#e3f1f1}", nav: [["/docs", "Documents"]] },
   audit: { name: "Demo audit log", css: ".top{background:#444}.top .lg{color:#fff}.sub{background:#eee}", nav: [] },
@@ -298,9 +298,9 @@ const ccReport = () => {
   return { head, rows };
 };
 const lasReport = () => {
-  const head = ["person_id", "name", "date_of_birth", "status", "date_of_death", "capacity_finances", "capacity_assessed", "representative_type", "representative_name", "representative_relationship", "representative_address", "open_alerts", "health_conditions", "allocated_worker", "team", "case_notes"];
+  const head = ["person_id", "name", "date_of_birth", "status", "date_of_death", "capacity_finances", "capacity_assessed", "representative_type", "representative_name", "representative_relationship", "representative_address", "open_alerts", "allocated_worker", "team"];
   const ids = [...new Set(ACCOUNTS.filter(a => a.lasId).map(a => a.lasId))].sort();
-  const rows = ids.map(id => { const a = ACCOUNTS.find(x => x.lasId === id); const l = LAS[id]; return [id, a.name, a.dob, l.status, l.dod || "", l.mca, l.mcaDate, l.rep ? l.rep.type : "", l.rep ? l.rep.name : "", l.rep ? l.rep.rel : "", l.rep ? l.rep.addr : "", l.alerts.map(x => `${x.type} (${x.date}): ${x.text}`).join(" || "), l.health.join("; "), l.worker, l.team, l.notes.map(n => `${n.date} ${n.by}: ${n.text}`).join(" || ")]; });
+  const rows = ids.map(id => { const a = ACCOUNTS.find(x => x.lasId === id); const l = LAS[id]; return [id, a.name, a.dob, l.status, l.dod || "", l.mca, l.mcaDate, l.rep ? l.rep.type : "", l.rep ? l.rep.name : "", l.rep ? l.rep.rel : "", l.rep ? l.rep.addr : "", l.alerts.map(x => `${x.type} (${x.date})`).join("; "), l.worker, l.team]; });
   return { head, rows };
 };
 const oraReport = () => {
@@ -310,47 +310,10 @@ const oraReport = () => {
 };
 R("GET", "/controcc/reports/recovery", () => { const { head, rows } = ccReport(); return ["cc", "Recovery report", reportPage("Report: Recovery work queue (all accounts)", `Every account with arrears at the extract of ${fmtD(EXTRACT)}, largest first. Run once, export to CSV.` + note("fast", "one export instead of 500 page views", "Reading this one report replaces opening the ContrOCC page for every account."), "/controcc/reports/recovery.csv", head, rows)]; });
 R("GET", "/controcc/reports/recovery.csv", (req, res) => { const { head, rows } = ccReport(); return sendCSV(res, "ContrOCC-recovery-report-2026-11-06.csv", head, rows); });
-R("GET", "/las/reports/financial-risk", () => { const { head, rows } = lasReport(); return ["las", "Financial risk report", reportPage("Report: Financial risk and capacity (all charged clients)", "Capacity, representatives, open alerts, deaths and case notes for every client with a charged care package. Run once, export to CSV." + note("limit", "a System C connector", "No Copilot connector exists for LAS. The report export is how the data comes out today."), "/las/reports/financial-risk.csv", head, rows)]; });
+R("GET", "/las/reports/financial-risk", () => { const { head, rows } = lasReport(); return ["las", "Financial risk report", reportPage("Report: Financial flags (all charged clients)", "Capacity, representatives, open alerts and deaths for every client with a charged care package. Run once, export to CSV. Case notes and health details are NOT in this report: they stay on each person's own page, which an officer opens only when needed." + note("limit", "a System C connector", "No Copilot connector exists for LAS. The report export is how the data comes out today."), "/las/reports/financial-risk.csv", head, rows)]; });
 R("GET", "/las/reports/financial-risk.csv", (req, res) => { const { head, rows } = lasReport(); return sendCSV(res, "LAS-financial-risk-report-2026-11-09.csv", head, rows); });
 R("GET", "/oracle/reports/ledger", () => { const { head, rows } = oraReport(); return ["ora", "Receivables ledger report", reportPage("Report: Receivables ledger (all customers)", "Ledger balance and latest receipt for every customer, as at today. Compare with the ContrOCC extract of " + fmtD(EXTRACT) + " to find payments made since. Run once, export to CSV.", "/oracle/reports/ledger.csv", head, rows)]; });
 R("GET", "/oracle/reports/ledger.csv", (req, res) => { const { head, rows } = oraReport(); return sendCSV(res, "Oracle-receivables-ledger-2026-11-09.csv", head, rows); });
-
-const parseCSV = text => {
-  const rows = []; let row = [], cur = "", q = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
-    else if (c === '"') q = true;
-    else if (c === ",") { row.push(cur); cur = ""; }
-    else if (c === "\n") { row.push(cur.replace(/\r$/, "")); rows.push(row); row = []; cur = ""; }
-    else cur += c;
-  }
-  if (cur.length || row.length) { row.push(cur.replace(/\r$/, "")); rows.push(row); }
-  return rows.filter(r => r.some(x => x.trim()));
-};
-const IMPORT_TYPES = ["Reminder drafted (awaiting officer)", "Held back - needs a person", "Referred to Revenue team", "Promise to pay", "Call note", "Direct Debit form received", "Other"];
-R("GET", "/controcc/import", (req) => {
-  const q = new URL(req.url, "http://x").searchParams; const msg = q.get("msg");
-  return ["cc", "Batch activity import", `<h1>Batch activity import</h1><p>Add activity log entries to many clients at once. Paste CSV with three columns and a header row: <code>client_id,type,entry</code>. One row per entry. Entries are added to each client's activity log and recorded in the audit log.</p>
-${msg ? `<div class="ok">${esc(msg)}</div>` : ""}${note("fast", "one import instead of one form per account", "Logging a note on each of dozens of accounts by hand is slow. A batch import does it in one step, with every entry still in the audit log.")}
-<p class="small">Allowed types: ${IMPORT_TYPES.map(esc).join("; ")}. Entries are 400 characters at most.</p>
-<form method="post" action="/controcc/import" class="card"><label>CSV (client_id,type,entry)</label><textarea name="csv" style="min-height:260px;font-family:Consolas,monospace" required></textarea><label>Entered by</label><input name="by" value="Recovery officer (prepared by Cowork)"><button>Import entries</button></form>`];
-});
-R("POST", "/controcc/import", async (req, res) => {
-  const b = await parseBody(req); const rows = parseCSV(b.csv || ""); let ok = 0; const bad = [];
-  rows.forEach((r, i) => {
-    if (i === 0 && /client/i.test(r[0])) return;
-    const a = accByCC((r[0] || "").trim()); const type = (r[1] || "").trim(); const text = (r.slice(2).join(",") || "").trim().slice(0, 400);
-    if (!a) { bad.push(`row ${i + 1}: unknown client ${r[0]}`); return; }
-    if (!IMPORT_TYPES.includes(type)) { bad.push(`row ${i + 1}: type not allowed (${type})`); return; }
-    if (!text) { bad.push(`row ${i + 1}: empty entry`); return; }
-    S.notes[a.cc].unshift({ date: TODAY, by: (b.by || "Recovery officer") + " [" + type + "]", text });
-    S.audit.unshift({ t: nowStamp(), sys: "ContrOCC", text: `${a.cc} ${a.name}: entry added [${type}] ${text.slice(0, 120)}` }); ok++;
-  });
-  save();
-  const msg = `Imported ${ok} entr${ok === 1 ? "y" : "ies"}.` + (bad.length ? ` ${bad.length} rejected: ${bad.slice(0, 5).join("; ")}.` : "");
-  return go(res, "/controcc/import?msg=" + encodeURIComponent(msg));
-});
 
 // ----- Audit -----
 R("GET", "/audit", () => ["audit", "Audit log", `<h1>Audit log</h1><p>Everything written to the demo systems.</p>${S.audit.length ? T(["Time", "System", "Entry"], S.audit.map(a => [a.t, esc(a.sys), esc(a.text)])) : "<p>Nothing has been written yet.</p>"}`]);

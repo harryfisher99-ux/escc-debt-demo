@@ -63,15 +63,15 @@ function letterHTML(stage, master) {
   const btn = `<p style="margin:8px 0 16px 0;"><a href="${LINKS.pay}" target="_blank" style="background-color:#005eb8;border-top:13px solid #005eb8;border-bottom:13px solid #005eb8;border-left:28px solid #005eb8;border-right:28px solid #005eb8;color:#ffffff;display:inline-block;font-family:Segoe UI,Arial,sans-serif;font-size:15px;font-weight:bold;line-height:1;text-decoration:none;mso-padding-alt:0;"><span style="color:#ffffff;"><font color="#ffffff">Pay your invoice online</font></span></a></p>`;
   return `<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${s.name}</title></head>
-<body style="margin:0;padding:0;background:#eef1f4;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#eef1f4"><tr><td align="center" style="padding:14px 8px;">
-<table width="640" cellpadding="0" cellspacing="0" border="0" style="width:640px;max-width:100%;background:#ffffff;border:1px solid #d5dde6;font-family:Segoe UI,Arial,sans-serif;color:#222222;">
+<body style="margin:0;padding:0;background:#ffffff;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:14px 8px;background-color:#ffffff;">
+<table width="640" cellpadding="0" cellspacing="0" border="0" style="width:640px;max-width:640px;background-color:#ffffff;border:1px solid #d5dde6;font-family:Segoe UI,Arial,sans-serif;color:#222222;">
 <!-- DEMO BANNER -->
 <tr><td style="background:#fff4cc;border-bottom:1px solid #e6c94d;padding:8px 14px;font-size:12px;color:#5c4400;"><b>ILLUSTRATIVE DEMONSTRATION.</b> Synthetic data. Not an East Sussex County Council notice and not the Council's approved wording.</td></tr>
 <!-- HEADER -->
-<tr><td style="padding:0;line-height:0;font-size:0;"><img src="${HEADER}" width="640" alt="East Sussex County Council | Adult Social Care and Health | Charging and Recovery" style="display:block;width:100%;max-width:640px;height:auto;border:0;"></td></tr>
+<tr><td style="padding:0;line-height:0;font-size:0;background-color:#003c69;"><img src="${HEADER}" width="640" alt="East Sussex County Council | Adult Social Care and Health | Charging and Recovery" style="display:block;width:100%;max-width:640px;height:auto;border:0;"></td></tr>
 <!-- BODY -->
-<tr><td style="padding:22px 24px 6px 24px;">
+<tr><td style="padding:22px 24px 6px 24px;background-color:#ffffff;font-family:Segoe UI,Arial,sans-serif;">
 <h1 style="margin:0 0 14px 0;font-size:21px;line-height:1.3;color:${NAVY};font-weight:700;">${s.heading}</h1>
 <p style="margin:0 0 12px 0;font-size:14px;line-height:1.55;">{{SALUTATION}}</p>
 <!--ATTORNEY_START--><p style="margin:0 0 14px 0;padding:10px 12px;background:${PALE};border-left:4px solid ${BLUE};font-size:13.5px;line-height:1.5;">This letter is about the account of <b>{{CLIENT_NAME}}</b>, on whose behalf you act as attorney under a Lasting Power of Attorney.</p><!--ATTORNEY_END-->
@@ -104,7 +104,7 @@ ${btn}
 <p style="margin:0 0 14px 0;font-size:14px;line-height:1.55;">Yours sincerely,</p>
 </td></tr>
 <!-- SIGNATURE -->
-<tr><td style="padding:0 24px 22px 24px;font-family:Segoe UI,Arial,sans-serif;">
+<tr><td style="padding:0 24px 22px 24px;background-color:#ffffff;font-family:Segoe UI,Arial,sans-serif;">
 <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr>
 <td width="4" style="width:4px;background-color:#005eb8;border-left:4px solid #005eb8;font-size:1px;line-height:1px;">&nbsp;</td>
 <td style="padding:2px 0 2px 14px;font-family:Segoe UI,Arial,sans-serif;font-size:13px;line-height:1.5;color:#222222;">
