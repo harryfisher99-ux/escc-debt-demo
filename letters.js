@@ -13,6 +13,8 @@ const LINKS = {
   site: "https://www.eastsussex.gov.uk/social-care/paying-for-care",
 };
 const LOGO = "https://www.eastsussex.gov.uk/media/mepbxm1y/decoupled-escc-logo-for-website-test-version-large.png?width=600&format=png";
+const HEADER = "https://raw.githubusercontent.com/harryfisher99-ux/escc-debt-demo/main/app/assets/escc-email-header.png";
+const SIGLOGO = "https://raw.githubusercontent.com/harryfisher99-ux/escc-debt-demo/main/app/assets/escc-signature-logo.png";
 const A = (u, t, extra = "") => `<a href="${u}" style="color:${BLUE};text-decoration:underline;${extra}">${t}</a>`;
 
 const STAGES = {
@@ -58,7 +60,7 @@ function letterHTML(stage, master) {
     ["Amount overdue as at 6 November 2026", "{{AMOUNT}}"], ["Oldest unpaid invoice was due", "{{OLDEST_DUE}}"], ...s.extraFacts, ["Pay by", "<b>{{PAY_BY}}</b>"],
   ];
   const factRows = facts.map(([k, v], i) => `${master && k === "{{PREV_LABEL}}" ? "<!--PREV_ROW_START-->" : ""}<tr><td width="42%" style="padding:8px 12px;border-bottom:1px solid #d5dde6;background:${i % 2 ? "#ffffff" : "#f4f7fa"};font-weight:600;color:${NAVY};font-size:13px;">${k}</td><td style="padding:8px 12px;border-bottom:1px solid #d5dde6;background:${i % 2 ? "#ffffff" : "#f4f7fa"};font-size:13px;color:#222;">${v}</td></tr>${master && k === "{{PREV_LABEL}}" ? "<!--PREV_ROW_END-->" : ""}`).join("");
-  const btn = `<table cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 14px 0;"><tr><td bgcolor="${BLUE}" style="border-radius:4px;"><a href="${LINKS.pay}" style="display:inline-block;padding:11px 22px;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;">Pay your invoice online</a></td></tr></table>`;
+  const btn = `<p style="margin:8px 0 16px 0;"><a href="${LINKS.pay}" target="_blank" style="background-color:#005eb8;border-top:13px solid #005eb8;border-bottom:13px solid #005eb8;border-left:28px solid #005eb8;border-right:28px solid #005eb8;color:#ffffff;display:inline-block;font-family:Segoe UI,Arial,sans-serif;font-size:15px;font-weight:bold;line-height:1;text-decoration:none;mso-padding-alt:0;"><span style="color:#ffffff;"><font color="#ffffff">Pay your invoice online</font></span></a></p>`;
   return `<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${s.name}</title></head>
 <body style="margin:0;padding:0;background:#eef1f4;">
@@ -67,8 +69,7 @@ function letterHTML(stage, master) {
 <!-- DEMO BANNER -->
 <tr><td style="background:#fff4cc;border-bottom:1px solid #e6c94d;padding:8px 14px;font-size:12px;color:#5c4400;"><b>ILLUSTRATIVE DEMONSTRATION.</b> Synthetic data. Not an East Sussex County Council notice and not the Council's approved wording.</td></tr>
 <!-- HEADER -->
-<tr><td bgcolor="${NAVY}" style="background:${NAVY};padding:18px 24px;"><img src="${LOGO}" width="300" alt="East Sussex County Council" style="display:block;width:300px;max-width:100%;height:auto;border:0;color:#ffffff;font-size:20px;font-family:Segoe UI,Arial,sans-serif;"></td></tr>
-<tr><td bgcolor="${BLUE}" style="background:${BLUE};padding:7px 24px;font-size:12px;letter-spacing:0.4px;color:#ffffff;font-weight:600;">ADULT SOCIAL CARE AND HEALTH &nbsp;|&nbsp; CHARGING AND RECOVERY</td></tr>
+<tr><td style="padding:0;line-height:0;font-size:0;"><img src="${HEADER}" width="640" alt="East Sussex County Council | Adult Social Care and Health | Charging and Recovery" style="display:block;width:100%;max-width:640px;height:auto;border:0;"></td></tr>
 <!-- BODY -->
 <tr><td style="padding:22px 24px 6px 24px;">
 <h1 style="margin:0 0 14px 0;font-size:21px;line-height:1.3;color:${NAVY};font-weight:700;">${s.heading}</h1>
@@ -100,16 +101,22 @@ ${btn}
 </td></tr></table>
 <h2 style="margin:18px 0 6px 0;font-size:16px;color:${NAVY};">What happens next</h2>
 <p style="margin:0 0 16px 0;font-size:14px;line-height:1.55;">${s.next}</p>
-<p style="margin:0 0 4px 0;font-size:14px;line-height:1.55;">Yours sincerely,</p>
+<p style="margin:0 0 14px 0;font-size:14px;line-height:1.55;">Yours sincerely,</p>
 </td></tr>
 <!-- SIGNATURE -->
-<tr><td style="padding:6px 24px 20px 24px;">
-<table cellpadding="0" cellspacing="0" border="0" style="border-top:2px solid ${NAVY};margin-top:8px;"><tr><td style="padding-top:10px;font-size:13px;line-height:1.55;color:#222;">
-<b style="font-size:14px;color:${NAVY};">Harry Fisher</b><br>
-Recovery Officer, Adult Social Care Charging and Recovery<br>
-East Sussex County Council, County Hall, St Anne's Crescent, Lewes, East Sussex BN7 1UE<br>
-Invoice and payment enquiries: 01273 481 280 (Monday to Thursday 9am to 5pm, Friday 9am to 4.30pm)<br>
-<a href="mailto:asc.recovery@eastsussex.gov.uk" style="color:${BLUE};">asc.recovery@eastsussex.gov.uk</a> &nbsp;|&nbsp; <a href="${LINKS.site}" style="color:${BLUE};">www.eastsussex.gov.uk/social-care/paying-for-care</a>
+<tr><td style="padding:0 24px 22px 24px;font-family:Segoe UI,Arial,sans-serif;">
+<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr>
+<td width="4" style="width:4px;background-color:#005eb8;border-left:4px solid #005eb8;font-size:1px;line-height:1px;">&nbsp;</td>
+<td style="padding:2px 0 2px 14px;font-family:Segoe UI,Arial,sans-serif;font-size:13px;line-height:1.5;color:#222222;">
+<div style="font-size:15px;font-weight:bold;color:#003c69;">Harry Fisher</div>
+<div style="color:#5a6572;">Recovery Officer</div>
+<div style="color:#222222;">Adult Social Care Charging and Recovery</div>
+<div style="color:#222222;margin-bottom:6px;">East Sussex County Council</div>
+<div><span style="color:#5a6572;">T</span>&nbsp; 01273 481 280</div>
+<div><span style="color:#5a6572;">E</span>&nbsp; <a href="mailto:asc.recovery@eastsussex.gov.uk" style="color:#005eb8;text-decoration:none;">asc.recovery@eastsussex.gov.uk</a></div>
+<div><span style="color:#5a6572;">W</span>&nbsp; <a href="${LINKS.site}" style="color:#005eb8;text-decoration:none;">www.eastsussex.gov.uk</a></div>
+<div style="color:#5a6572;margin-top:6px;font-size:12px;">County Hall, St Anne's Crescent, Lewes, East Sussex BN7 1UE<br>Phone lines open 9am to 5pm Monday to Thursday, 9am to 4.30pm Friday</div>
+<div style="margin-top:10px;"><img src="${SIGLOGO}" width="190" alt="East Sussex County Council" style="display:block;width:190px;height:auto;border:0;"></div>
 </td></tr></table>
 </td></tr>
 <!-- FOOTER -->
@@ -124,7 +131,7 @@ const SAMPLE = {
 };
 const stripAttorney = h => h.replace(/<!--ATTORNEY_START-->[\s\S]*?<!--ATTORNEY_END-->/, "");
 function fill(html, vars) { let h = html; Object.entries(vars).forEach(([k, v]) => { h = h.split("{{" + k + "}}").join(v); }); return h; }
-module.exports = { STAGES, LINKS, LOGO, letterHTML, SAMPLE, fill, stripAttorney };
+module.exports = { STAGES, LINKS, LOGO, SIGLOGO, HEADER, letterHTML, SAMPLE, fill, stripAttorney };
 
 
 
