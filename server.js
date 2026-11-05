@@ -322,7 +322,7 @@ R("GET", "/api/audit.json", (req, res) => { res.writeHead(200, { "Content-Type":
 R("GET", "/api/mandates.json", (req, res) => { res.writeHead(200, { "Content-Type": "application/json" }); res.end(JSON.stringify(S.mandates)); return null; });
 R("GET", "/health", (req, res) => { res.writeHead(200); res.end("ok"); return null; });
 
-const GENERIC = ["/", "/assets/escc-logo.png", "/assets/escc-email-header.png", "/assets/escc-signature-logo.png", "/audit", "/reset", "/reset-local", "/notes/toggle", "/health", "/api/audit.json", "/api/mandates.json"];
+const GENERIC = ["/", "/assets/:name", "/audit", "/reset", "/reset-local", "/notes/toggle", "/health", "/api/audit.json", "/api/mandates.json"];
 const allowed = p => SYSTEM === "all" || GENERIC.includes(p) || p.startsWith(PREFIX[SYSTEM]);
 const compiled = Object.keys(routes).filter(k => allowed(k.split(" ")[1])).map(k => { const [method, p] = k.split(" "); return { method, re: new RegExp("^" + p.replace(/:(\w+)/g, "(?<$1>[^/]+)") + "$"), fn: routes[k] }; });
 load();
