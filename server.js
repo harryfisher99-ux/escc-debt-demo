@@ -3,6 +3,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { TODAY, EXTRACT, ACCOUNTS, LAS, CC_NOTES, DDFORMS, CALLS } = require("./data");
+const LET = require("./letters");
 const PORT = process.env.PORT || 3000;
 const STATE_FILE = path.join(__dirname, "state.json");
 const VERSION = 1;
@@ -255,6 +256,7 @@ R("POST", "/oracle/approvals/:id", async (req, res, p) => {
 
 // ----- SharePoint documents -----
 R("GET", "/docs", () => ["docs", "Documents", `<h1>ASC Debt Recovery</h1><div class="grid2"><div class="card"><h2><a href="/docs/dd">Direct Debit forms received</a></h2><p>${DDFORMS.length} digital forms received 5 and 6 November.</p></div>
+<div class="card"><h2><a href="/docs/templates">Letter templates</a></h2><p>Approved first, second and final reminder email templates.</p></div>
 <div class="card"><h2><a href="/docs/calls">Call transcripts</a></h2><p>${CALLS.length} recent call transcript from the Revenue team.</p></div></div>`]);
 R("GET", "/docs/dd", () => ["docs", "Direct Debit forms", `<h1>Direct Debit forms received</h1>${note("fast", "reading digital forms", "Forms that arrive as digital documents can be read, checked and prepared straight away. Paper forms still need scanning first.")}${T(["Form", "Received", "Account holder (as written)"], DDFORMS.map(f => [`<a href="/docs/dd/${f.id}">${f.id}</a>`, fmtD(f.received), esc(f.accName)]))}`]);
 R("GET", "/docs/dd/:id", (req, res, p) => {
@@ -274,13 +276,21 @@ R("GET", "/docs/calls/:id", (req, res, p) => {
 <div class="card">${c.text.map(l => `<p><b>${esc(l[0])}:</b> ${esc(l[1])}</p>`).join("")}</div>`];
 });
 
+// ----- Letter templates (SharePoint library) -----
+R("GET", "/docs/templates", () => ["docs", "Letter templates", `<h1>Letter templates</h1><p>Approved reminder email templates for Adult Social Care Charging and Recovery (demo). Cowork copies the HTML exactly and replaces the {{PLACEHOLDERS}}.</p>${note("fast", "the right look every time", "Every draft uses the council header, key-facts table, pay button, support links and signature, so letters look like they came from the team.")}
+${T(["Template", "Stage", "Preview", "HTML source"], [["first-reminder", "First reminder", `<a href="/docs/templates/first/preview">Preview</a>`, `<a href="/docs/templates/master/source">Master source</a> | <a href="/docs/templates/wording">Stage wording</a>`], ["second-reminder", "Second reminder", `<a href="/docs/templates/second/preview">Preview</a>`, `<a href="/docs/templates/master/source">Master source</a> | <a href="/docs/templates/wording">Stage wording</a>`], ["final-reminder", "Final reminder", `<a href="/docs/templates/final/preview">Preview</a>`, `<a href="/docs/templates/master/source">Master source</a> | <a href="/docs/templates/wording">Stage wording</a>`]])}`]);
+R("GET", "/docs/templates/master/source", () => ["docs", "Master template", `<h1>Master email template: HTML source</h1><p>Copy this HTML exactly. Replace each {{PLACEHOLDER}} (see the <a href="/docs/templates/wording">stage wording</a>). First reminder: delete the key-facts row between PREV_ROW_START and PREV_ROW_END. To write to the person, delete everything from ATTORNEY_START to ATTORNEY_END inclusive. To write to an attorney, keep that block and put their name in {{SALUTATION}}. Remove the HTML comments from the final email.</p><textarea readonly style="height:640px;font-family:Consolas,monospace;font-size:12px">${esc(LET.letterHTML("first", true))}</textarea>`]);
+R("GET", "/docs/templates/wording", () => ["docs", "Stage wording", `<h1>Stage wording</h1>${T(["Item", "First reminder", "Second reminder", "Final reminder"], [["Subject", ...["first", "second", "final"].map(k => esc(LET.STAGES[k].subject))], ["{{HEADING}}", ...["first", "second", "final"].map(k => esc(LET.STAGES[k].heading))], ["{{PREV_LABEL}}", "(delete the row)", ...["second", "final"].map(k => esc(LET.STAGES[k].extraFacts[0][0]))], ["{{OPENING}}", ...["first", "second", "final"].map(k => esc(LET.STAGES[k].opening.replace(/<[^>]+>/g, "")))], ["{{THANKS}}", ...["first", "second", "final"].map(k => esc(LET.STAGES[k].thanks))], ["{{SUPPORT_LEAD}}", ...["first", "second", "final"].map(k => esc(LET.STAGES[k].supportLead.replace(/<[^>]+>/g, "")))], ["{{NEXT}}", ...["first", "second", "final"].map(k => esc(LET.STAGES[k].next))]])}`]);R("GET", "/docs/templates/:stage/preview", (req, res, p) => { if (!LET.STAGES[p.stage]) return ["docs", "Not found", "<h1>Not found</h1>"]; res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); res.end(LET.fill(LET.letterHTML(p.stage), LET.SAMPLE)); return null; });
+R("GET", "/docs/templates/:stage/source", (req, res, p) => { if (!LET.STAGES[p.stage]) return ["docs", "Not found", "<h1>Not found</h1>"]; const s = LET.STAGES[p.stage]; return ["docs", "Template source", `<h1>${esc(s.name)}: HTML source</h1><p><b>Subject:</b> ${esc(s.subject)}</p><p>Copy this HTML exactly. Replace each {{PLACEHOLDER}}. To write to the person, delete everything from &lt;!--ATTORNEY_START--&gt; to &lt;!--ATTORNEY_END--&gt; inclusive. To write to an attorney, keep that block and use their name in {{SALUTATION}}.</p><textarea readonly style="height:640px;font-family:Consolas,monospace;font-size:12px">${esc(LET.letterHTML(p.stage))}</textarea>`]; });
+R("GET", "/assets/escc-logo.png", (req, res) => { res.writeHead(200, { "Content-Type": "image/png" }); res.end(fs.readFileSync(path.join(__dirname, "assets", "escc-logo.png"))); return null; });
+
 // ----- Audit -----
 R("GET", "/audit", () => ["audit", "Audit log", `<h1>Audit log</h1><p>Everything written to the demo systems.</p>${S.audit.length ? T(["Time", "System", "Entry"], S.audit.map(a => [a.t, esc(a.sys), esc(a.text)])) : "<p>Nothing has been written yet.</p>"}`]);
 R("GET", "/api/audit.json", (req, res) => { res.writeHead(200, { "Content-Type": "application/json" }); res.end(JSON.stringify(S.audit)); return null; });
 R("GET", "/api/mandates.json", (req, res) => { res.writeHead(200, { "Content-Type": "application/json" }); res.end(JSON.stringify(S.mandates)); return null; });
 R("GET", "/health", (req, res) => { res.writeHead(200); res.end("ok"); return null; });
 
-const GENERIC = ["/", "/audit", "/reset", "/reset-local", "/notes/toggle", "/health", "/api/audit.json", "/api/mandates.json"];
+const GENERIC = ["/assets/escc-logo.png", "/", "/audit", "/reset", "/reset-local", "/notes/toggle", "/health", "/api/audit.json", "/api/mandates.json"];
 const allowed = p => SYSTEM === "all" || GENERIC.includes(p) || p.startsWith(PREFIX[SYSTEM]);
 const compiled = Object.keys(routes).filter(k => allowed(k.split(" ")[1])).map(k => { const [method, p] = k.split(" "); return { method, re: new RegExp("^" + p.replace(/:(\w+)/g, "(?<$1>[^/]+)") + "$"), fn: routes[k] }; });
 load();
@@ -295,5 +305,7 @@ http.createServer(async (req, res) => {
     html(res, shell("home", "Not found", "<h1>Page not found</h1>"), 404);
   } catch (e) { console.error(e); res.writeHead(500); res.end("Server error"); }
 }).listen(PORT, () => console.log("ESCC demo on " + PORT));
+
+
 
 
