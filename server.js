@@ -289,7 +289,7 @@ R("GET", "/assets/:name", (req, res, p) => { if (!IMG_OK.includes(p.name)) { res
 const csvCell = v => { const s = String(v ?? ""); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
 const toCSV = (head, rows) => [head.join(","), ...rows.map(r => r.map(csvCell).join(","))].join("\r\n") + "\r\n";
 const sendCSV = (res, name, head, rows) => { res.writeHead(200, { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="${name}"` }); res.end("\uFEFF" + toCSV(head, rows)); return null; };
-const reportPage = (title, intro, csvHref, head, rows) => `<h1>${esc(title)}</h1><p>${intro}</p><p><a class="btn" href="${csvHref}">Export to CSV</a></p><p class="small">${rows.length} rows. This is the same data as the CSV.</p>
+const reportPage = (title, intro, csvHref, head, rows) => `<h1>${esc(title)}</h1><p>${intro}</p><p><a class="btn" href="${csvHref}">Export to CSV</a> <a class="btn grey" href="${csvHref.replace('.csv', '.txt')}">Text view (plain text, 100 rows a page)</a></p><p class="small">${rows.length} rows. This is the same data as the CSV.</p>
 <div style="overflow:auto;max-height:70vh"><table><thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 
 const ccReport = () => {
@@ -315,6 +315,20 @@ R("GET", "/las/reports/financial-risk", () => { const { head, rows } = lasReport
 R("GET", "/las/reports/financial-risk.csv", (req, res) => { const { head, rows } = lasReport(); return sendCSV(res, "LAS-financial-risk-report-2026-11-09.csv", head, rows); });
 R("GET", "/oracle/reports/ledger", () => { const { head, rows } = oraReport(); return ["ora", "Receivables ledger report", reportPage("Report: Receivables ledger (all customers)", "Ledger balance and latest receipt for every customer, as at today. Compare with the ContrOCC extract of " + fmtD(EXTRACT) + " to find payments made since. Run once, export to CSV.", "/oracle/reports/ledger.csv", head, rows)]; });
 R("GET", "/oracle/reports/ledger.csv", (req, res) => { const { head, rows } = oraReport(); return sendCSV(res, "Oracle-receivables-ledger-2026-11-09.csv", head, rows); });
+
+// ----- Plain-text report views (every row as text, 100 rows a page) -----
+const TXT_PAGE = 100;
+const clip = (v, n) => { const s = String(v ?? "").replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
+const sendTxt = (req, res, title, base, head, rows) => {
+  const pg = pageOf(req); const n = Math.max(1, Math.ceil(rows.length / TXT_PAGE));
+  const slice = rows.slice((pg - 1) * TXT_PAGE, pg * TXT_PAGE);
+  const lines = [`${title}`, `Plain text view. Page ${pg} of ${n} (rows ${(pg - 1) * TXT_PAGE + 1} to ${Math.min(pg * TXT_PAGE, rows.length)} of ${rows.length}). Columns are separated by |.`,
+    pg < n ? `NEXT PAGE: ${base}?page=${pg + 1}` : "LAST PAGE.", "", head.join(" | "), ...slice.map(r => r.map(c => clip(c, 110)).join(" | "))];
+  res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" }); res.end(lines.join("\n") + "\n"); return null;
+};
+R("GET", "/controcc/reports/recovery.txt", (req, res) => { const { head, rows } = ccReport(); return sendTxt(req, res, "ContrOCC: Recovery work queue (all accounts), arrears extract 06/11/2026", "/controcc/reports/recovery.txt", head, rows); });
+R("GET", "/las/reports/financial-risk.txt", (req, res) => { const { head, rows } = lasReport(); return sendTxt(req, res, "LAS: Financial flags (all charged clients)", "/las/reports/financial-risk.txt", head, rows); });
+R("GET", "/oracle/reports/ledger.txt", (req, res) => { const { head, rows } = oraReport(); return sendTxt(req, res, "Oracle: Receivables ledger (all customers)", "/oracle/reports/ledger.txt", head, rows); });
 
 // ----- Audit -----
 R("GET", "/audit", () => ["audit", "Audit log", `<h1>Audit log</h1><p>Everything written to the demo systems.</p>${S.audit.length ? T(["Time", "System", "Entry"], S.audit.map(a => [a.t, esc(a.sys), esc(a.text)])) : "<p>Nothing has been written yet.</p>"}`]);
