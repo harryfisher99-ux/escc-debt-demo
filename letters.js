@@ -60,12 +60,12 @@ function letterHTML(stage, master) {
     ["Amount overdue as at 6 November 2026", "{{AMOUNT}}"], ["Oldest unpaid invoice was due", "{{OLDEST_DUE}}"], ...s.extraFacts, ["Pay by", "<b>{{PAY_BY}}</b>"],
   ];
   const factRows = facts.map(([k, v], i) => `${master && k === "{{PREV_LABEL}}" ? "<!--PREV_ROW_START-->" : ""}<tr><td width="42%" style="padding:8px 12px;border-bottom:1px solid #d5dde6;background:${i % 2 ? "#ffffff" : "#f4f7fa"};font-weight:600;color:${NAVY};font-size:13px;">${k}</td><td style="padding:8px 12px;border-bottom:1px solid #d5dde6;background:${i % 2 ? "#ffffff" : "#f4f7fa"};font-size:13px;color:#222;">${v}</td></tr>${master && k === "{{PREV_LABEL}}" ? "<!--PREV_ROW_END-->" : ""}`).join("");
-  const btn = `<p style="margin:8px 0 16px 0;"><a href="${LINKS.pay}" target="_blank" style="background-color:#005eb8;border-top:13px solid #005eb8;border-bottom:13px solid #005eb8;border-left:28px solid #005eb8;border-right:28px solid #005eb8;color:#ffffff;display:inline-block;font-family:Segoe UI,Arial,sans-serif;font-size:15px;font-weight:bold;line-height:1;text-decoration:none;mso-padding-alt:0;"><span style="color:#ffffff;"><font color="#ffffff">Pay your invoice online</font></span></a></p>`;
+  const btn = `<p style="margin:8px 0 16px 0;"><a href="${LINKS.pay}" target="_blank" style="background-color:#005eb8;border-top:13px solid #005eb8;border-bottom:13px solid #005eb8;border-left:28px solid #005eb8;border-right:28px solid #005eb8;color:#ffffff;display:inline-block;font-family:Segoe UI,Arial,sans-serif;font-size:15px;font-weight:bold;line-height:1;text-decoration:none;mso-padding-alt:0;"><span style="color:#ffffff;">Pay your invoice online</span></a></p>`;
   return `<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${s.name}</title></head>
 <body style="margin:0;padding:0;background:#ffffff;">
 <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:14px 8px;background-color:#ffffff;">
-<table width="640" cellpadding="0" cellspacing="0" border="0" style="width:640px;max-width:640px;background-color:#ffffff;border:1px solid #d5dde6;font-family:Segoe UI,Arial,sans-serif;color:#222222;">
+<div style="max-width:640px;margin:0 auto;"><table width="640" cellpadding="0" cellspacing="0" border="0" style="width:640px;max-width:640px;background-color:#ffffff;border:1px solid #d5dde6;font-family:Segoe UI,Arial,sans-serif;color:#222222;">
 <!-- DEMO BANNER -->
 <tr><td style="background:#fff4cc;border-bottom:1px solid #e6c94d;padding:8px 14px;font-size:12px;color:#5c4400;"><b>ILLUSTRATIVE DEMONSTRATION.</b> Synthetic data. Not an East Sussex County Council notice and not the Council's approved wording.</td></tr>
 <!-- HEADER -->
@@ -121,7 +121,7 @@ ${btn}
 </td></tr>
 <!-- FOOTER -->
 <tr><td bgcolor="#f4f7fa" style="background:#f4f7fa;border-top:1px solid #d5dde6;padding:12px 24px;font-size:11px;line-height:1.5;color:${GREY};">This message is intended for the use of the addressee only and may contain confidential or privileged information. If you have received it in error please notify the sender and destroy it. All communications sent to or from the County Council may be subject to recording and/or monitoring in accordance with relevant legislation. East Sussex County Council will only ever ask you to pay using the ways shown on our website. DEMONSTRATION: fictitious data.</td></tr>
-</table></td></tr></table>
+</table></div></td></tr></table>
 </body></html>`;
 }
 
